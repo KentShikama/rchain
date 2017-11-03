@@ -1,0 +1,7 @@
+// rtn = 'Rholang-rtn-121266325
+
+new anyone, unused_rtn in {
+    for (auction_contract <- rtn) {
+        @auction_contract.get("auction_end")!([anyone, unused_rtn])
+    }
+}
