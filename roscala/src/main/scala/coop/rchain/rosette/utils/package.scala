@@ -2,38 +2,35 @@ package coop.rchain.rosette
 
 import java.io.{File, PrintWriter}
 
-import scala.collection.mutable
+import shapeless.Lens
 
 package object utils {
-
   def printToFile(f: File)(op: PrintWriter => Unit) {
     val p = new PrintWriter(f)
     try { op(p) } finally { p.close() }
   }
 
-  def pSlice[T](src: mutable.Seq[T], start: Int, end: => Int) =
-    new mutable.Seq[T] {
-      def checkBounds(idx: Int): Unit =
-        if (idx > end - start) {
-          throw new IndexOutOfBoundsException
-        }
-
-      override def update(idx: Int, elem: T): Unit = {
-        checkBounds(idx)
-
-        src(idx + start) = elem
+  //this function exist only to use `asInstanceOf`-like casts at lens level
+  //so normally when we use code like:
+  //    ob.asInstanceOf[StdExtension]
+  //at lens level we can perform a similar cast:
+  //    val l: Lens[Ob,Ob] = lens[Ob] >> 'extension
+  //    val extL: Lens[Ob,StdExtension] = new unsafeCastLens[StdExtension]()
+  class unsafeCastLens[B] {
+    def apply[T, A](lens: Lens[T, A]): Lens[T, B] =
+      new Lens[T, B] {
+        override def get(s: T): B = lens.get(s).asInstanceOf[B]
+        override def set(s: T)(b: B): T = lens.set(s)(b.asInstanceOf[A])
       }
+  }
 
-      override def length: Int =
-        math.min(src.size, end) - start
+  object unsafeCastLens {
+    def apply[B] = new unsafeCastLens[B]
+  }
 
-      override def apply(idx: Int): T = {
-        checkBounds(idx)
-
-        src(idx + start)
-      }
-
-      override def iterator: Iterator[T] =
-        src.slice(start, end).iterator
-    }
+  def lensTrans[S, A](lens: Lens[S, A], s: S)(f: A => A): S = {
+    val a = lens.get(s)
+    val b = f(a)
+    lens.set(s)(b)
+  }
 }

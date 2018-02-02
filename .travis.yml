@@ -1,0 +1,34 @@
+language: scala
+scala:
+  - 2.12.4
+sbt_args: -no-colors
+dist: trusty
+env:
+  - SUBPROJECT=comm
+  - SUBPROJECT=rholang
+  - SUBPROJECT=roscala
+  - SUBPROJECT=rosette
+  - SUBPROJECT=storage
+script: ./scripts/build-subproject.sh
+sudo: required
+install: ./scripts/install.sh
+cache:
+  directories:
+    - "$HOME/.ivy2/cache"
+    - "$HOME/.sbt"
+notifications:
+  email:
+    recipients:
+      - rchain-makers@pyrofex.net
+    on_success: never
+    on_failure: always
+addons:
+    apt:
+        sources:
+            - sourceline: 'deb https://dl.bintray.com/sbt/debian /'
+        packages:
+            - sbt
+            - jflex
+            - haskell-platform
+
+

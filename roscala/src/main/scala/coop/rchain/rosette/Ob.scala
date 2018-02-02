@@ -2,81 +2,126 @@ package coop.rchain.rosette
 
 import java.io.File
 
+import coop.rchain.rosette
+import coop.rchain.rosette.utils.{lensTrans, printToFile, unsafeCastLens}
+import coop.rchain.rosette.Meta.StdMeta
 import coop.rchain.rosette.Ob.{ObTag, SysCode}
-import coop.rchain.rosette.utils.{pSlice, printToFile}
+import coop.rchain.rosette.prim.Prim
+import coop.rchain.rosette.utils.Instances._
 import shapeless.OpticDefns.RootLens
 import shapeless._
-
-import scala.collection.mutable
-
-sealed trait LookupError
-case object Absent extends LookupError
-case object Upcall extends LookupError
+import cats.implicits._
 
 trait Base
 
-//TODO change type of `indirect` argument to bool
-trait Ob extends Base {
-  val _slot: mutable.Seq[Ob]
+trait Ob extends Base with Cloneable {
+  val slot: Seq[Ob] = Nil
 
   val obTag: ObTag = null
   val sysval: SysCode = null
   val constantP = true
 
-  def meta: Ob = _slot.head
-  def parent: Ob = _slot(1)
-  lazy val slot: mutable.Seq[Ob] = pSlice(_slot, 2, _slot.size)
+  def meta: Ob = slot.head
+  def parent: Ob = slot(1)
 
-  def dispatch(ctxt: Ctxt): Ob = null
-  def extendWith(keymeta: Ob): Ob = null
-  def extendWith(keymeta: Ob, argvec: Tuple): Ob = null
+  def dispatch(state: VMState): (Result, VMState) = null
+  def extendWith(keyMeta: Ob): Ob = null
 
-  def getAddr(ind: Int, level: Int, offset: Int): Ob =
-    getLex(ind, level, offset)
+  def getAddr(indirect: Boolean, level: Int, offset: Int): Ob =
+    getLex(indirect, level, offset)
 
-  def getField(ind: Int,
+  def getField(indirect: Boolean,
                level: Int,
                offset: Int,
                spanSize: Int,
                sign: Int): Ob =
     ??? //TODO
 
-  def getLex(ind: Int, level: Int, offset: Int): Ob = {
-    val p: Ob = nthParent(level)
+  def getLex(indirect: Boolean, level: Int, offset: Int): Ob = {
+    val p: Ob = (0 until level).foldLeft(this)((ob, _) => ob.parent)
 
-    actorExtension(ind, p)
+    actorExtension(indirect, p)
       .map(offsetOrInvalid(offset, _))
       .getOrElse(Ob.INVALID)
   }
 
   def is(value: Ob.ObTag): Boolean = true
-  def lookupOBO(meta: Ob, ob: Ob, key: Ob): Either[LookupError, Ob] =
+
+  def lookup(key: Ob, ctxt: Ctxt): Result =
     Right(null)
+
+  def lookupOBO(meta: Ob, ob: Ob, key: Ob): Result =
+    Right(null)
+
+  def lookupAndInvoke(state: VMState): (Result, VMState) = {
+    val fn = meta match {
+      case stdMeta: StdMeta =>
+        stdMeta.lookupOBOStdMeta(self, state.ctxt.trgt)(state)
+      case _ => Left(Absent)
+    }
+
+    if (state.interruptPending != 0) {
+      (Left(Absent), state)
+    } else {
+      // TODO:
+      //if (fn == ABSENT) {
+      //  PROTECT_THIS(Ob); PROTECT(ctxt);
+      //  ctxt->prepare();
+      //  Tuple* new_argvec = Tuple::create (2, INVALID);
+      //  new_argvec->elem(0) = ctxt->trgt;
+      //  new_argvec->elem(1) = ctxt;
+      //  Ctxt* new_ctxt = Ctxt::create (oprnMissingMethod, new_argvec);
+      //  new_ctxt->monitor = vm->systemMonitor;
+      //  return oprnMissingMethod->dispatch(new_ctxt);
+      //}
+
+      fn match {
+        case Right(prim: Prim) => prim.invoke(state)
+        case _ => (Left(Absent), state)
+      }
+    }
+  }
+
   def matches(ctxt: Ctxt): Boolean = false
-  def numberOfSlots(): Int = slot.length
+  def numberOfSlots(): Int = slot.size
   def runtimeError(msg: String, state: VMState): (RblError, VMState) =
     (DeadThread, state)
 
-  def setAddr(ind: Int, level: Int, offset: Int, value: Ob): Ob =
-    setLex(ind, level, offset, value)
+  def setAddr(indirect: Boolean, level: Int, offset: Int, value: Ob): Ob =
+    setLex(indirect, level, offset, value)._2
 
-  def setField(ind: Int,
+  def setField(indirect: Boolean,
                level: Int,
                offset: Int,
                spanSize: Int,
                value: Int): Ob =
     ??? //TODO
 
-  def setLex(ind: Int, level: Int, offset: Int, value: Ob): Ob = {
-    val p: Ob = nthParent(level)
+  def setLex(indirect: Boolean, level: Int, offset: Int, value: Ob): (Ob, Ob) = {
+    val nthParentLens =
+      (0 until level).foldLeft(lens[Ob]: Lens[Ob, Ob])((l, _) => l >> 'parent)
 
-    actorExtension(ind, p)
-      .filter(_ => offset < p.numberOfSlots)
-      .map { ob =>
-        //TODO remove side effect here
-        ob.slot(offset) = value
-        value
-      } getOrElse Ob.INVALID
+    def inSlotNum(lens: Lens[Ob, Ob]): Option[Lens[Ob, Ob]] =
+      if (!indirect) Some(lens)
+      else {
+        val numberOfSlots = lens.get(this).numberOfSlots()
+        if (slotNum() >= numberOfSlots) None
+        else {
+          val resLens = unsafeCastLens[Actor](lens) >> 'extension
+          Some(unsafeCastLens[Ob](resLens))
+        }
+      }
+
+    def updateSlot(lens: Lens[Ob, Ob]): Option[(Ob, Ob)] =
+      if (offset >= numberOfSlots) None
+      else {
+        val slotLens = lens >> 'slot
+        val res = lensTrans(slotLens, this)(_.updated(offset, value))
+        Some(res, value)
+      }
+
+    (inSlotNum(nthParentLens) >>= updateSlot)
+      .getOrElse((this, Ob.INVALID))
   }
 
   def notImplemented(opName: String): Unit = {
@@ -101,7 +146,7 @@ trait Ob extends Base {
 
   def self: Ob = this
 
-  def inlineablePrimP: Prim = Prim.INVALID
+  def inlineablePrimP: Either[RblError, Prim] = Left(Invalid)
 
   def emptyMbox: Ob = Ob.INVALID
 
@@ -110,18 +155,6 @@ trait Ob extends Base {
   def mailbox: Ob = emptyMbox
 
   def setMailbox(ob: Ob): Ob = self
-
-  def rcons(ob: Ob): Ob =
-    copyOb(slot = slot :+ ob)
-
-  def copyOb(parent: Ob = parent,
-             meta: Ob = meta,
-             slot: mutable.Seq[Ob] = slot): Ob = {
-    val (p, m, s) = (parent, meta, slot)
-    new Ob {
-      override val _slot: mutable.Seq[Ob] = m +: p +: s
-    }
-  }
 
   def addSlot(l: Ob, r: Ob): Int = {
     notImplemented()
@@ -138,8 +171,10 @@ trait Ob extends Base {
   def nth(i: Int): Option[Ob] = Some(notImplementedOb())
   def slotNum() = 0 //TODO missing implementation
 
-  private def actorExtension(ind: Int, p: Ob): Option[Ob] =
-    if (ind > 0) {
+  override def clone(): AnyRef = super.clone()
+
+  private def actorExtension(indirect: Boolean, p: Ob): Option[Ob] =
+    if (indirect) {
       p match {
         case a: Actor =>
           Some(a.extension)
@@ -155,8 +190,6 @@ trait Ob extends Base {
     } else {
       Ob.INVALID
     }
-
-  private def nthParent(level: Int): Ob = recMap(level, this)(_.parent)
 }
 
 object Ob {
@@ -179,25 +212,12 @@ object Ob {
   case object SyscodeSleep extends SysCode
   case object SyscodeDeadThread extends SysCode
 
-  case object ABSENT extends Ob {
-    override val _slot: mutable.Seq[Ob] = null
-  }
-
-  case object INVALID extends Ob {
-    override val _slot: mutable.Seq[Ob] = null
-  }
-
-  case object NIV extends Ob {
-    override val _slot: mutable.Seq[Ob] = null
-  }
-
-  object RBLTRUE extends Ob {
-    override val _slot: mutable.Seq[Ob] = null
-  }
-
-  object RBLFALSE extends Ob {
-    override val _slot: mutable.Seq[Ob] = null
-  }
+  object ABSENT extends Ob
+  object INVALID extends Ob
+  object NIV extends Ob
+  object RBLTRUE extends Ob
+  object RBLFALSE extends Ob
+  object NilMeta extends Ob
 
   object Lenses {
     def setA[T, A](a: A)(f: RootLens[A] ⇒ Lens[A, T])(value: T): A =

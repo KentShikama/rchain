@@ -27,6 +27,7 @@ Springsprout.iml
 ehthumbs.db
 Icon?
 Thumbs.db
+*.swp
 
 # SBT
 #####
@@ -37,4 +38,13 @@ boot/
 
 # BNFC
 ###################
+rholang/bnfc/
 rholang/src/main/java/coop/**
+
+# Rosette
+###################
+!rosette/bin/README
+rosette/src/*.o
+rosette/.vagrant/
+rosette/Vagrantfile
+rosette/cmake-build-debug/
