@@ -246,7 +246,7 @@ object ProcNormalizeMatcher {
         subProcRight: Proc,
         input: ProcVisitInputs,
         constructor: (Par, Par) => T)(implicit toExprInstance: T => Expr): M[ProcVisitOutputs] =
-      sync.suspend{
+      sync.suspend {
         for {
           leftResult <- normalizeMatch[M](subProcLeft, input.copy(par = VectorPar()))
           rightResult <- normalizeMatch[M](
@@ -696,7 +696,7 @@ object ProcNormalizeMatcher {
           bindingsProcessed                                                <- processBindings(sources)
           bindingsFree                                                     = bindingsProcessed.map(binding => binding._5).foldLeft(BitSet())(_ | _)
           bindingsTrimmed                                                  = bindingsProcessed.map(b => (b._1, b._2, b._3, b._4))
-          receipts = ReceiveBindsSortMatcher
+          receipts <- ReceiveBindsSortMatcher
             .preSortBinds[M, VarSort](bindingsTrimmed)
           mergedFrees <- receipts.toList.foldM[M, DebruijnLevelMap[VarSort]](
                           DebruijnLevelMap[VarSort]())((env, receipt) =>
