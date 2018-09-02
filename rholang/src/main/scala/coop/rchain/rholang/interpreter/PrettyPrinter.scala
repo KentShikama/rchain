@@ -44,40 +44,39 @@ case class PrettyPrinter(freeShift: Int,
       e.exprInstance match {
 
         case ENegBody(ENeg(p)) => pure("-") |+| buildStringM(p).map(_.wrapWithBraces)
-        case ENotBody(ENot(p)) => pure("~") |+| buildStringM(p).map(_.wrapWithBraces)
+        case ENotBody(ENot(p)) => pure("~") |+| buildStringM(p)
         case EMultBody(EMult(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" * ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" * ") |+| buildStringM(p2)
         case EDivBody(EDiv(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" / ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" / ") |+| buildStringM(p2)
         case EPercentPercentBody(EPercentPercent(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" %% ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" %% ") |+| buildStringM(p2)
         case EPlusBody(EPlus(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" + ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" + ") |+| buildStringM(p2)
         case EPlusPlusBody(EPlusPlus(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" ++ ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" ++ ") |+| buildStringM(p2)
         case EMinusBody(EMinus(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" - ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" - ") |+| buildStringM(p2)
         case EMinusMinusBody(EMinusMinus(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" -- ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" -- ") |+| buildStringM(p2)
         case EAndBody(EAnd(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" && ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" && ") |+| buildStringM(p2)
         case EOrBody(EOr(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" || ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" || ") |+| buildStringM(p2)
         case EEqBody(EEq(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" == ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" == ") |+| buildStringM(p2)
         case ENeqBody(ENeq(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" != ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" != ") |+| buildStringM(p2)
         case EGtBody(EGt(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" > ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" > ") |+| buildStringM(p2)
         case EGteBody(EGte(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" >= ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" >= ") |+| buildStringM(p2)
         case ELtBody(ELt(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" < ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" < ") |+| buildStringM(p2)
         case ELteBody(ELte(p1, p2)) =>
-          (buildStringM(p1) |+| pure(" <= ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+          buildStringM(p1) |+| pure(" <= ") |+| buildStringM(p2)
         case EMatchesBody(EMatches(target, pattern)) =>
-          (buildStringM(target) |+| pure(" matches ") |+| buildStringM(pattern))
-            .map(_.wrapWithBraces)
+          buildStringM(target) |+| pure(" matches ") |+| buildStringM(pattern)
         case EListBody(EList(s, _, _, remainder)) =>
           pure("[") |+| buildSeq(s) |+| buildRemainderString(remainder) |+| pure("]")
         case ETupleBody(ETuple(s, _, _)) =>
