@@ -41,74 +41,77 @@ case class PrettyPrinter(freeShift: Int,
 
   def buildStringM(e: Expr): Coeval[String] =
 
-    e.exprInstance match {
+    Coeval.defer {
+      e.exprInstance match {
 
-      case ENegBody(ENeg(p)) => pure("-") |+| buildStringM(p).map(_.wrapWithBraces)
-      case ENotBody(ENot(p)) => pure("~") |+| buildStringM(p).map(_.wrapWithBraces)
-      case EMultBody(EMult(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" * ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EDivBody(EDiv(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" / ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EPercentPercentBody(EPercentPercent(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" %% ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EPlusBody(EPlus(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" + ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EPlusPlusBody(EPlusPlus(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" ++ ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EMinusBody(EMinus(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" - ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EMinusMinusBody(EMinusMinus(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" -- ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EAndBody(EAnd(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" && ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EOrBody(EOr(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" || ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EEqBody(EEq(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" == ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case ENeqBody(ENeq(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" != ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EGtBody(EGt(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" > ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EGteBody(EGte(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" >= ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case ELtBody(ELt(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" < ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case ELteBody(ELte(p1, p2)) =>
-        (buildStringM(p1) |+| pure(" <= ") |+| buildStringM(p2)).map(_.wrapWithBraces)
-      case EMatchesBody(EMatches(target, pattern)) =>
-        (buildStringM(target) |+| pure(" matches ") |+| buildStringM(pattern)).map(_.wrapWithBraces)
-      case EListBody(EList(s, _, _, remainder)) =>
-        pure("[") |+| buildSeq(s) |+| buildRemainderString(remainder) |+| pure("]")
-      case ETupleBody(ETuple(s, _, _)) =>
-        pure("(") |+| buildSeq(s) |+| pure(")")
-      case ESetBody(ParSet(pars, _, _, remainder)) =>
-        pure("Set(") |+| buildSeq(pars.sortedPars) |+| buildRemainderString(remainder) |+| pure(")")
-      case EMapBody(ParMap(ps, _, _)) =>
-        pure("{") |+| (pure("") /: ps.sortedMap.zipWithIndex) {
-          case (string, (kv, i)) =>
-            string |+| buildStringM(kv._1) |+| pure(" : ") |+| buildStringM(kv._2) |+| pure {
-              if (i != ps.sortedMap.length - 1) ", "
-              else ""
-            }
-        } |+| pure("}")
+        case ENegBody(ENeg(p)) => pure("-") |+| buildStringM(p).map(_.wrapWithBraces)
+        case ENotBody(ENot(p)) => pure("~") |+| buildStringM(p).map(_.wrapWithBraces)
+        case EMultBody(EMult(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" * ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EDivBody(EDiv(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" / ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EPercentPercentBody(EPercentPercent(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" %% ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EPlusBody(EPlus(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" + ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EPlusPlusBody(EPlusPlus(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" ++ ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EMinusBody(EMinus(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" - ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EMinusMinusBody(EMinusMinus(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" -- ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EAndBody(EAnd(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" && ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EOrBody(EOr(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" || ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EEqBody(EEq(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" == ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case ENeqBody(ENeq(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" != ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EGtBody(EGt(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" > ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EGteBody(EGte(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" >= ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case ELtBody(ELt(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" < ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case ELteBody(ELte(p1, p2)) =>
+          (buildStringM(p1) |+| pure(" <= ") |+| buildStringM(p2)).map(_.wrapWithBraces)
+        case EMatchesBody(EMatches(target, pattern)) =>
+          (buildStringM(target) |+| pure(" matches ") |+| buildStringM(pattern)).map(_.wrapWithBraces)
+        case EListBody(EList(s, _, _, remainder)) =>
+          pure("[") |+| buildSeq(s) |+| buildRemainderString(remainder) |+| pure("]")
+        case ETupleBody(ETuple(s, _, _)) =>
+          pure("(") |+| buildSeq(s) |+| pure(")")
+        case ESetBody(ParSet(pars, _, _, remainder)) =>
+          pure("Set(") |+| buildSeq(pars.sortedPars) |+| buildRemainderString(remainder) |+| pure(")")
+        case EMapBody(ParMap(ps, _, _)) =>
+          pure("{") |+| (pure("") /: ps.sortedMap.zipWithIndex) {
+            case (string, (kv, i)) =>
+              string |+| buildStringM(kv._1) |+| pure(" : ") |+| buildStringM(kv._2) |+| pure {
+                if (i != ps.sortedMap.length - 1) ", "
+                else ""
+              }
+          } |+| pure("}")
 
-      case EVarBody(EVar(v)) => buildStringM(v)
-      case EEvalBody(chan)   => pure("*") |+| buildStringM(chan)
-      case GBool(b)          => pure(b.toString)
-      case GInt(i)           => pure(i.toString)
-      case GString(s)        => pure("\"" + s + "\"")
-      case GUri(u)           => pure(s"`$u`")
-      // TODO: Figure out if we can prevent ScalaPB from generating
-      case ExprInstance.Empty => pure("Nil")
-      case EMethodBody(method) =>
-        val args = method.arguments.map(buildStringM).toList.intercalate(pure(","))
-        pure("(") |+| buildStringM(method.target) |+| pure(")." + method.methodName + "(") |+| args |+| pure(")")
-      case ExprInstance.GByteArray(bs) => pure(Base16.encode(bs.toByteArray))
-      case _                           => throw new Error(s"Attempted to print unknown Expr type: $e")
+        case EVarBody(EVar(v)) => buildStringM(v)
+        case EEvalBody(chan)   => pure("*") |+| buildStringM(chan)
+        case GBool(b)          => pure(b.toString)
+        case GInt(i)           => pure(i.toString)
+        case GString(s)        => pure("\"" + s + "\"")
+        case GUri(u)           => pure(s"`$u`")
+        // TODO: Figure out if we can prevent ScalaPB from generating
+        case ExprInstance.Empty => pure("Nil")
+        case EMethodBody(method) =>
+          val args = method.arguments.map(buildStringM).toList.intercalate(pure(","))
+          pure("(") |+| buildStringM(method.target) |+| pure(")." + method.methodName + "(") |+| args |+| pure(
+              ")")
+        case ExprInstance.GByteArray(bs) => pure(Base16.encode(bs.toByteArray))
+        case _                           => throw new Error(s"Attempted to print unknown Expr type: $e")
+      }
     }
 
   private def buildRemainderString(remainder: Option[Var]): Coeval[String] =
-    pure(remainder.fold("")(v => "..." + buildStringM(v)))
+    remainder.fold(pure(""))(v => pure("...") |+| buildStringM(v))
 
   def buildStringM(v: Var): Coeval[String] =
     v.varInstance match {
@@ -136,7 +139,7 @@ case class PrettyPrinter(freeShift: Int,
         } |+| buildSeq(s.data) |+| pure(")")
 
       case r: Receive =>
-        val (totalFree, bindsString) = ((0, "") /: r.binds.zipWithIndex) {
+        val (totalFree, bindsString) = ((0, pure("")) /: r.binds.zipWithIndex) {
           case ((previousFree, string), (bind, i)) =>
             val bindString =
               this
@@ -147,15 +150,15 @@ case class PrettyPrinter(freeShift: Int,
                   baseId = setBaseId()
                 )
                 .buildPattern(bind.patterns)
-            (bind.freeCount + previousFree, string + bindString + {
+            (bind.freeCount + previousFree, string |+| bindString |+| pure {
               if (r.persistent) " <= " else " <- "
-            } + buildStringM(bind.source) + {
+            } |+| buildStringM(bind.source) |+| pure {
               if (i != r.binds.length - 1) " ; "
               else ""
             })
         }
 
-        pure("for( " + bindsString + " ) { ") |+| this
+        pure("for( ") |+| bindsString |+| pure(" ) { ") |+| this
           .copy(boundShift = boundShift + totalFree)
           .buildStringM(r.body) |+| pure(" }")
 
