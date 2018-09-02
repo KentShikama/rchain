@@ -1,6 +1,7 @@
 package coop.rchain.casper.api
 
 import cats.Id
+import cats.effect.Sync
 import cats.implicits._
 import com.google.protobuf.ByteString
 import coop.rchain.casper.helper.{BlockStoreFixture, HashSetCasperTestNode}
@@ -10,7 +11,6 @@ import coop.rchain.casper.util.rholang.InterpreterUtil
 import coop.rchain.crypto.signatures.Ed25519
 import coop.rchain.models._
 import coop.rchain.casper.{Created, HashSetCasperTest}
-
 import coop.rchain.models.Channel.ChannelInstance.Quote
 import coop.rchain.models.Expr.ExprInstance.GInt
 import monix.execution.Scheduler.Implicits.global
@@ -22,6 +22,8 @@ import scala.collection.immutable.BitSet
 class ListeningNameAPITest extends FlatSpec with Matchers with BlockStoreFixture {
 
   import HashSetCasperTest._
+
+  implicit val syncId: Sync[Id] = coop.rchain.catscontrib.effect.implicits.syncId
 
   private val (validatorKeys, validators) = (1 to 4).map(_ => Ed25519.newKeyPair).unzip
   private val bonds                       = createBonds(validators)
