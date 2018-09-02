@@ -10,7 +10,10 @@ import cats.implicits._
 private[sort] object GroundSortMatcher extends Sortable[ExprInstance] {
   def sortMatch[F[_]: Sync](g: ExprInstance): F[ScoredTerm[ExprInstance]] =
     g match {
-      case gb: GBool   => Sortable.sortMatch(gb).map { sorted => ScoredTerm(g, sorted.score) }
+      case gb: GBool =>
+        Sortable.sortMatch(gb).map { sorted =>
+          ScoredTerm(g, sorted.score)
+        }
       case gi: GInt    => ScoredTerm(g, Leaves(Score.INT, gi.value)).pure[F]
       case gs: GString => ScoredTerm(g, Node(Score.STRING, Leaf(gs.value))).pure[F]
       case gu: GUri    => ScoredTerm(g, Node(Score.URI, Leaf(gu.value))).pure[F]
@@ -33,9 +36,9 @@ private[sort] object GroundSortMatcher extends Sortable[ExprInstance] {
       case ESetBody(gs) =>
         for {
           pars <- gs.ps.sortedPars
-                         .map(par => Sortable.sortMatch(par))
-                         .sequence
-          sortedPars = pars.sorted
+                   .map(par => Sortable.sortMatch(par))
+                   .sequence
+          sortedPars        = pars.sorted
           remainderScoreOpt = gs.remainder.map(_ => Leaf(Score.REMAINDER))
         } yield
           ScoredTerm(
@@ -54,7 +57,7 @@ private[sort] object GroundSortMatcher extends Sortable[ExprInstance] {
           } yield ScoredTerm((sortedKey.term, sortedValue.term), sortedKey.score)
 
         for {
-          pars <- gm.ps.sortedMap.map(kv => sortKeyValuePair(kv._1, kv._2)).sequence
+          pars       <- gm.ps.sortedMap.map(kv => sortKeyValuePair(kv._1, kv._2)).sequence
           sortedPars = pars.sorted
         } yield
           ScoredTerm(EMapBody(ParMap(sortedPars.map(_.term), gm.connectiveUsed, gm.locallyFree)),
@@ -62,6 +65,7 @@ private[sort] object GroundSortMatcher extends Sortable[ExprInstance] {
       case GByteArray(ba) =>
         ScoredTerm(g, Node(Score.EBYTEARR, Leaf(ba.toString))).pure[F]
       case _ => //TODO(mateusz.gorski): rethink it
-        Sync[F].raiseError(new IllegalArgumentException("GwroundSortMatcher passed unknown Expr instance"))
+        Sync[F].raiseError(
+          new IllegalArgumentException("GwroundSortMatcher passed unknown Expr instance"))
     }
 }

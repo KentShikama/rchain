@@ -7,24 +7,26 @@ import coop.rchain.models.rholang.implicits._
 import cats.implicits._
 
 private[sort] object ConnectiveSortMatcher extends Sortable[Connective] {
-  def sortMatch[F[_]: Sync](c: Connective): F[ScoredTerm[Connective]] = {
-
+  def sortMatch[F[_]: Sync](c: Connective): F[ScoredTerm[Connective]] =
     c.connectiveInstance match {
-      case ConnAndBody(cb) => for {
-        pars <- cb.ps.toList.map(par => Sortable.sortMatch(par)).sequence
-      } yield
-        ScoredTerm(Connective(ConnAndBody(cb.withPs(pars.map(_.term.get)))),
-                   Node(Score.CONNECTIVE_AND, pars.map(_.score): _*))
-      case ConnOrBody(cb) => for {
-        pars <- cb.ps.toList.map(par => Sortable.sortMatch(par)).sequence
-      } yield
-        ScoredTerm(Connective(ConnOrBody(cb.withPs(pars.map(_.term.get)))),
-                   Node(Score.CONNECTIVE_OR, pars.map(_.score): _*))
-      case ConnNotBody(p) => for {
-        scoredPar <- Sortable.sortMatch(p)
-      } yield
-        ScoredTerm(Connective(ConnNotBody(scoredPar.term.get)),
-                   Node(Score.CONNECTIVE_NOT, scoredPar.score))
+      case ConnAndBody(cb) =>
+        for {
+          pars <- cb.ps.toList.map(par => Sortable.sortMatch(par)).sequence
+        } yield
+          ScoredTerm(Connective(ConnAndBody(cb.withPs(pars.map(_.term.get)))),
+                     Node(Score.CONNECTIVE_AND, pars.map(_.score): _*))
+      case ConnOrBody(cb) =>
+        for {
+          pars <- cb.ps.toList.map(par => Sortable.sortMatch(par)).sequence
+        } yield
+          ScoredTerm(Connective(ConnOrBody(cb.withPs(pars.map(_.term.get)))),
+                     Node(Score.CONNECTIVE_OR, pars.map(_.score): _*))
+      case ConnNotBody(p) =>
+        for {
+          scoredPar <- Sortable.sortMatch(p)
+        } yield
+          ScoredTerm(Connective(ConnNotBody(scoredPar.term.get)),
+                     Node(Score.CONNECTIVE_NOT, scoredPar.score))
       case v @ VarRefBody(VarRef(index, depth)) =>
         ScoredTerm(Connective(v), Leaves(Score.CONNECTIVE_VARREF, index, depth)).pure[F]
       case v @ ConnBool(_) =>
@@ -40,5 +42,4 @@ private[sort] object ConnectiveSortMatcher extends Sortable[Connective] {
       case Empty =>
         ScoredTerm(Connective(Empty), Leaf(Score.ABSENT)).pure[F]
     }
-  }
 }

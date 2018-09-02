@@ -14,7 +14,7 @@ private[sort] object ParSortMatcher extends Sortable[Par] {
       matches     <- par.matches.toList.map(m => Sortable.sortMatch(m)).sequence
       bundles     <- par.bundles.toList.map(b => Sortable.sortMatch(b)).sequence
       connectives <- par.connectives.toList.map(c => Sortable.sortMatch(c)).sequence
-      ids         =  par.ids.map(g => ScoredTerm(g, Node(Score.PRIVATE, Leaf(g.id)))).sorted
+      ids         = par.ids.map(g => ScoredTerm(g, Node(Score.PRIVATE, Leaf(g.id)))).sorted
       sortedPar = Par(
         sends = sends.sorted.map(_.term),
         receives = receives.sorted.map(_.term),

@@ -7,8 +7,7 @@ import coop.rchain.models.Channel.ChannelInstance.{ChanVar, Empty, Quote}
 import coop.rchain.models.rholang.implicits._
 
 private[sort] object ChannelSortMatcher extends Sortable[Channel] {
-  def sortMatch[F[_]: Sync](channel: Channel): F[ScoredTerm[Channel]] = {
-
+  def sortMatch[F[_]: Sync](channel: Channel): F[ScoredTerm[Channel]] =
     channel.channelInstance match {
       case Quote(par) =>
         Sortable.sortMatch(par).map { sortedPar =>
@@ -21,5 +20,4 @@ private[sort] object ChannelSortMatcher extends Sortable[Channel] {
       case Empty =>
         Sync[F].pure(ScoredTerm(Empty, Leaf(Score.ABSENT)))
     }
-  }
 }

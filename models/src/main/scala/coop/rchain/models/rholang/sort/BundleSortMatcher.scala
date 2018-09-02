@@ -17,7 +17,8 @@ private[sort] object BundleSortMatcher extends Sortable[Bundle] {
       Score.BUNDLE_EQUIV
     }
     Sortable
-      .sortMatch(b.body).map { sortedPar =>
+      .sortMatch(b.body)
+      .map { sortedPar =>
         ScoredTerm(b.copy(body = sortedPar.term), Node(score, sortedPar.score))
       }
   }

@@ -40,7 +40,6 @@ case class PrettyPrinter(freeShift: Int,
   def buildString(m: GeneratedMessage): String = buildStringM(m).value
 
   def buildStringM(e: Expr): Coeval[String] =
-
     Coeval.defer {
       e.exprInstance match {
 
@@ -77,13 +76,15 @@ case class PrettyPrinter(freeShift: Int,
         case ELteBody(ELte(p1, p2)) =>
           (buildStringM(p1) |+| pure(" <= ") |+| buildStringM(p2)).map(_.wrapWithBraces)
         case EMatchesBody(EMatches(target, pattern)) =>
-          (buildStringM(target) |+| pure(" matches ") |+| buildStringM(pattern)).map(_.wrapWithBraces)
+          (buildStringM(target) |+| pure(" matches ") |+| buildStringM(pattern))
+            .map(_.wrapWithBraces)
         case EListBody(EList(s, _, _, remainder)) =>
           pure("[") |+| buildSeq(s) |+| buildRemainderString(remainder) |+| pure("]")
         case ETupleBody(ETuple(s, _, _)) =>
           pure("(") |+| buildSeq(s) |+| pure(")")
         case ESetBody(ParSet(pars, _, _, remainder)) =>
-          pure("Set(") |+| buildSeq(pars.sortedPars) |+| buildRemainderString(remainder) |+| pure(")")
+          pure("Set(") |+| buildSeq(pars.sortedPars) |+| buildRemainderString(remainder) |+| pure(
+            ")")
         case EMapBody(ParMap(ps, _, _)) =>
           pure("{") |+| (pure("") /: ps.sortedMap.zipWithIndex) {
             case (string, (kv, i)) =>
@@ -104,7 +105,7 @@ case class PrettyPrinter(freeShift: Int,
         case EMethodBody(method) =>
           val args = method.arguments.map(buildStringM).toList.intercalate(pure(","))
           pure("(") |+| buildStringM(method.target) |+| pure(")." + method.methodName + "(") |+| args |+| pure(
-              ")")
+            ")")
         case ExprInstance.GByteArray(bs) => pure(Base16.encode(bs.toByteArray))
         case _                           => throw new Error(s"Attempted to print unknown Expr type: $e")
       }
@@ -187,9 +188,11 @@ case class PrettyPrinter(freeShift: Int,
       case c: Connective =>
         c.connectiveInstance match {
           case ConnectiveInstance.Empty => pure("")
-          case ConnAndBody(value)       => pure("{") |+| value.ps.map(buildStringM).toList.intercalate(pure(" /\\ ")) |+| pure("}")
-          case ConnOrBody(value)        => pure("{") |+| value.ps.map(buildStringM).toList.intercalate(pure(" \\/ ")) |+| pure("}")
-          case ConnNotBody(value)       => pure("~{") |+| buildStringM(value) |+| pure("}")
+          case ConnAndBody(value) =>
+            pure("{") |+| value.ps.map(buildStringM).toList.intercalate(pure(" /\\ ")) |+| pure("}")
+          case ConnOrBody(value) =>
+            pure("{") |+| value.ps.map(buildStringM).toList.intercalate(pure(" \\/ ")) |+| pure("}")
+          case ConnNotBody(value) => pure("~{") |+| buildStringM(value) |+| pure("}")
           case VarRefBody(value) =>
             pure("=") |+| buildStringM(Var(FreeVar(value.index)))
           case _: ConnBool      => pure("Bool")
@@ -204,22 +207,23 @@ case class PrettyPrinter(freeShift: Int,
         else {
           val list =
             List(par.bundles,
-              par.sends,
-              par.receives,
-              par.news,
-              par.exprs,
-              par.matches,
-              par.ids,
-              par.connectives)
+                 par.sends,
+                 par.receives,
+                 par.news,
+                 par.exprs,
+                 par.matches,
+                 par.ids,
+                 par.connectives)
           ((false, pure("")) /: list) {
             case ((prevNonEmpty, string), items) =>
               if (items.nonEmpty) {
-                (true, string |+| pure { if (prevNonEmpty) " | " else "" } |+| (pure("") /: items.zipWithIndex) {
-                  case (_string, (_par, index)) =>
-                    _string |+| buildStringM(_par) |+| pure {
-                      if (index != items.length - 1) " | " else ""
-                    }
-                })
+                (true,
+                 string |+| pure { if (prevNonEmpty) " | " else "" } |+| (pure("") /: items.zipWithIndex) {
+                   case (_string, (_par, index)) =>
+                     _string |+| buildStringM(_par) |+| pure {
+                       if (index != items.length - 1) " | " else ""
+                     }
+                 })
               } else (prevNonEmpty, string)
           }
         }._2

@@ -16,7 +16,8 @@ object ordering {
     implicit val sync = implicitly[Sync[Coeval]]
 
     def sort: List[Par] = {
-      val psSorted: List[Coeval[ScoredTerm[Par]]] = ps.map(par => Sortable[Par].sortMatch[Coeval](par))
+      val psSorted: List[Coeval[ScoredTerm[Par]]] =
+        ps.map(par => Sortable[Par].sortMatch[Coeval](par))
       val coeval: Coeval[List[Par]] = for {
         parsSorted <- psSorted.sequence
       } yield parsSorted.sorted.map(_.term)

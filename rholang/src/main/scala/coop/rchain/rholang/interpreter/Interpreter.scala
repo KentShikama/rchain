@@ -43,7 +43,7 @@ object Interpreter {
         inputs  = ProcVisitInputs(VectorPar(), IndexMapChain[VarSort](), DebruijnLevelMap[VarSort]())
         outputs <- normalizeTerm(term, inputs)
         sorted <- Sortable[Par]
-                  .sortMatch(outputs.par)
+                   .sortMatch(outputs.par)
       } yield sorted.term
     } catch {
       case th: Throwable => Coeval.raiseError(UnrecognizedInterpreterError(th))
