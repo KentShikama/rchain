@@ -143,7 +143,7 @@ sealed abstract class MultiParentCasperInstances {
 
       def addBlock(b: BlockMessage): F[BlockStatus] =
         for {
-          acquire <- Capture[F].capture {
+          acquire <- Sync[F].delay {
                       processingBlocks.mapAndUpdate[(Set[BlockHash], Boolean)](
                         blocks => {
                           if (blocks.contains(b.blockHash)) blocks -> false
@@ -162,7 +162,7 @@ sealed abstract class MultiParentCasperInstances {
                          .map(_ => BlockStatus.processing)
                      case Right((_, true)) =>
                        internalAddBlock(b).flatMap(status =>
-                         Capture[F].capture { processingBlocks.update(_ - b.blockHash); status })
+                         Sync[F].delay { processingBlocks.update(_ - b.blockHash); status })
                      case Left(ex) =>
                        Log[F]
                          .warn(
@@ -184,7 +184,7 @@ sealed abstract class MultiParentCasperInstances {
           _ <- attempt match {
                 case MissingBlocks => ().pure[F]
                 case _ =>
-                  Capture[F].capture { blockBuffer -= b } *> blockBufferDependencyDagState.modify(
+                  Sync[F].delay { blockBuffer -= b } *> blockBufferDependencyDagState.modify(
                     blockBufferDependencyDag =>
                       DoublyLinkedDagOperations.remove(blockBufferDependencyDag, b.blockHash))
               }
@@ -239,7 +239,7 @@ sealed abstract class MultiParentCasperInstances {
               raw = Some(d)
             )
             for {
-              _ <- Capture[F].capture {
+              _ <- Sync[F].delay {
                     deployHist += deploy
                   }
               _ <- Log[F].info(s"Received ${PrettyPrinter.buildString(deploy)}")
@@ -296,11 +296,11 @@ sealed abstract class MultiParentCasperInstances {
       // TODO: Optimize for large number of deploys accumulated over history
       private def remDeploys(dag: BlockDag, p: Seq[BlockMessage]): F[Seq[Deploy]] =
         for {
-          result <- Capture[F].capture { deployHist.clone() }
+          result <- Sync[F].delay { deployHist.clone() }
           _ <- DagOperations
                 .bfTraverseF[F, BlockMessage](p.toList)(ProtoUtil.unsafeGetParents[F])
                 .foreach(b =>
-                  Capture[F].capture {
+                  Sync[F].delay {
                     b.body.foreach(_.deploys.flatMap(_.deploy).foreach(result -= _))
                 })
         } yield result.toSeq
@@ -364,7 +364,7 @@ sealed abstract class MultiParentCasperInstances {
               } yield (possibleProcessedDeploys._2, possibleProcessedDeploys._1)
           }
 
-      def blockDag: F[BlockDag] = Capture[F].capture {
+      def blockDag: F[BlockDag] = Sync[F].delay {
         _blockDag.get
       }
 
@@ -395,7 +395,7 @@ sealed abstract class MultiParentCasperInstances {
        */
       private def attemptAdd(b: BlockMessage): F[BlockStatus] =
         for {
-          dag                  <- Capture[F].capture { _blockDag.get }
+          dag                  <- Sync[F].delay { _blockDag.get }
           postValidationStatus <- Validate.blockSummary[F](b, genesis, dag, shardId)
           postTransactionsCheckStatus <- postValidationStatus.traverse(
                                           _ =>
@@ -441,7 +441,7 @@ sealed abstract class MultiParentCasperInstances {
               s"Added ${PrettyPrinter.buildString(block.blockHash)}")
           case MissingBlocks =>
             for {
-              _              <- Capture[F].capture { blockBuffer += block }
+              _              <- Sync[F].delay { blockBuffer += block }
               dag            <- blockDag
               missingParents = parentHashes(block).toSet
               missingJustifictions = block.justifications
@@ -455,7 +455,7 @@ sealed abstract class MultiParentCasperInstances {
               _ <- missingDependencies.traverse(hash => handleMissingDependency(hash, block))
             } yield ()
           case AdmissibleEquivocation =>
-            Capture[F].capture {
+            Sync[F].delay {
               val baseEquivocationBlockSeqNum = block.seqNum - 1
               if (equivocationsTracker.exists {
                     case EquivocationRecord(validator, seqNum, _) =>
@@ -526,7 +526,7 @@ sealed abstract class MultiParentCasperInstances {
           _ <- Log[F].warn(
                 s"Recording invalid block ${PrettyPrinter.buildString(block.blockHash)} for ${status.toString}.")
           // TODO: Slash block for status except InvalidUnslashableBlock
-          _ <- Capture[F].capture(invalidBlockTracker += block.blockHash) *> addToState(block)
+          _ <- Sync[F].delay(invalidBlockTracker += block.blockHash) *> addToState(block)
         } yield ()
 
       private def addToState(block: BlockMessage): F[Unit] =
@@ -570,7 +570,7 @@ sealed abstract class MultiParentCasperInstances {
           _ <- if (attempts.isEmpty) {
                 ().pure[F]
               } else {
-                Capture[F].capture {
+                Sync[F].delay {
                   dependencyFreeBlocks.map {
                     blockBuffer -= _
                   }
