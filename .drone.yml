@@ -49,6 +49,11 @@ pipeline:
     commands:
       - sbt rholang/bnfc:generate compile test:compile it:compile doc
 
+  typecheck-integration-tests:
+    <<: *sbtenv
+    commands:
+      - ./integration-testing/mypy.sh
+
   run-unit-tests:
     <<: *sbtenv
     commands:
