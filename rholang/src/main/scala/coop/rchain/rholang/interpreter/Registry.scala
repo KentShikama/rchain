@@ -941,7 +941,11 @@ class RegistryImpl[F[_]](
           // Then check the signature
           val Some(Expr(GByteArray(sigBytes))) = sig.singleExpr
           if (keyBytes.size == 32 && sigBytes.size == 64 &&
-              Ed25519.verify(value.toByteArray, sigBytes.toByteArray, keyBytes.toByteArray)) {
+              Ed25519.verify(
+                Blake2b256.hash(value.toByteArray),
+                sigBytes.toByteArray,
+                keyBytes.toByteArray
+              )) {
             val curryChan: Par  = GPrivate(ByteString.copyFrom(rand.next()))
             val resultChan: Par = GPrivate(ByteString.copyFrom(rand.next()))
             val hashKeyBytes    = Blake2b256.hash(keyBytes.toByteArray)

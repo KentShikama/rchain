@@ -4,7 +4,7 @@ import com.google.protobuf.ByteString
 import coop.rchain.casper.protocol.DeployData
 import coop.rchain.crypto.codec.Base16
 import coop.rchain.crypto.hash.{Blake2b256, Blake2b512Random}
-import coop.rchain.crypto.signatures.Ed25519
+import coop.rchain.crypto.signatures.{Ed25519, Secp256k1}
 import coop.rchain.crypto.{PrivateKey, PublicKey}
 import coop.rchain.models.Expr.ExprInstance.GInt
 import coop.rchain.models.rholang.implicits._
@@ -73,11 +73,11 @@ final case class Derivation(
     | 1.  |            | given              | sk = ${sk}
     | 2.  |            | given              | timestamp = ${timestamp}
     | 3.  |            | lastNonce          | nonce = ${result.nonce}
-    | 4.  | 1,         | ed25519            | pk = ${result.pk}
+    | 4.  | 1,         | secp256k1          | pk = ${result.pk}
     | 5.  | 4, 2,      | genIds             | uname = ${pprint(uname)}
     | 6.  | 3, 5,      | registry           | value = ${pprint(toSign)}
     | 7.  | 6,         | protobuf           | toSign = ${Hex(toSign.toByteArray)}
-    | 8.  | 7, 1,      | ed25519            | sig = ${result.sig}
+    | 8.  | 7, 1,      | secp256k1          | sig = ${result.sig}
     | 9.  | 4,         | registry           | uri = ${uri}
     | ----+------------+--------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------
     | */
@@ -104,8 +104,8 @@ object Args {
   ): Args = {
     val keyPair =
       skOption
-        .map(sk => (sk, Ed25519.toPublic(sk)))
-        .getOrElse(Ed25519.newKeyPair)
+        .map(sk => (sk, Secp256k1.toPublic(sk)))
+        .getOrElse(Secp256k1.newKeyPair)
 
     val id =
       unforgeableNameStr
@@ -199,7 +199,8 @@ object RegistrySigGen {
 
     // Now we can sign the value that goes in the registry.
     val toSign: Par = ETuple(Seq(GInt(lastNonce), access))
-    val sig         = Ed25519.sign(toSign.toByteArray, secKey)
+    val hash        = Blake2b256.hash(toSign.toByteArray)
+    val sig         = Secp256k1.sign(hash, secKey)
 
     val keyHash = Blake2b256.hash(pubKey.bytes)
     val uri     = Registry.buildURI(keyHash)
