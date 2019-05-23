@@ -29,7 +29,10 @@ new PoS,
     getCurrentUserVault,
     getMVar,
     runMVar,
-    deposit in {
+    deposit,
+    rs(`rho:registry:insertSigned:ed25519`),
+    uriCh
+     in {
   registryLookup!(`rho:id:1o93uitkrjfubh43jt19owanuezhntag5wh74c6ur5feuotpi73q8z`, *revVaultCh) |
 
   for(@(_, RevVault) <- revVaultCh) {
@@ -154,13 +157,12 @@ new PoS,
         }
       }
     } |
-    new registryInsert(`rho:registry:insertSigned:ed25519`),uriCh in {
-      registryInsert!(
-        "cc87bf7747a8c176714b417ca14a63897b07572876c5e38a7896b6007738ef81".hexToBytes(),
-        (9223372036854775807, bundle+{*PoS}),
-        "7ff160accda7f76f14f2ae132aaae140ac22b2671e561a58a566bff1a01e49cf372201a5df678aba5ff09171b6af966906deffbf8933efeeddb69a4c204b0503".hexToBytes(),
-        *uriCh
-      )
-    }
+
+    rs!(
+      "cc87bf7747a8c176714b417ca14a63897b07572876c5e38a7896b6007738ef81".hexToBytes(),
+      (9223372036854775807, bundle+{*PoS}),
+      "7ff160accda7f76f14f2ae132aaae140ac22b2671e561a58a566bff1a01e49cf372201a5df678aba5ff09171b6af966906deffbf8933efeeddb69a4c204b0503".hexToBytes(),
+      *uriCh
+    )
   }
 }

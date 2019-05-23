@@ -159,7 +159,7 @@ object RegistrySigGen {
   def main(argv: Array[String]) = {
     // these could be command-line args...
     val info = RegistrySigGen.deriveFrom(Args.parse(argv))
-    System.out.println(info)
+    System.err.println(info)
   }
 
   /**
